@@ -1,4 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const DEFAULT_API_BASE = 'https://mern-assignment-55ld.onrender.com';
+
+function getApiBase() {
+  const envBase = import.meta.env.VITE_API_URL?.trim();
+  const base = envBase || (import.meta.env.DEV ? '' : DEFAULT_API_BASE);
+  return base.replace(/\/$/, '');
+}
+
+const API_BASE = getApiBase();
 
 function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
