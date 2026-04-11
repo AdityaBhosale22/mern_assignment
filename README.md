@@ -12,14 +12,27 @@ Full-stack task management app with JWT authentication, personal and assigned ta
 ## Prerequisites
 
 - Node.js 18+
-- MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) account (free tier is fine). **You do not need Docker** for this setup.
+
+### MongoDB Atlas (no Docker)
+
+1. Sign in to [Atlas](https://cloud.mongodb.com/) and create a **project** and a **free M0 cluster** (any region).
+2. **Database Access:** create a database user (username + password). Save the password — you will put it in the connection string.
+3. **Network Access:** click **Add IP Address** → **Add Current IP Address** (or **Allow access from anywhere** `0.0.0.0/0` for local dev only — less secure).
+4. **Database** → **Connect** → **Drivers** → copy the **connection string**. It looks like:
+   `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority`
+5. Replace `<password>` with your user’s password. If the password contains special characters (`@`, `#`, etc.), [URL-encode](https://www.urlencoder.org/) them (e.g. `@` → `%40`).
+6. Add a database name before the query string, e.g. `mongodb+srv://user:pass@cluster.mongodb.net/task_management?retryWrites=true&w=majority`
+7. Put that full string in `server/.env` as `MONGODB_URI=...`
+
+If the app cannot connect: double-check Network Access (IP allowlist), the password in the URI, and that the string uses `mongodb+srv://` for Atlas.
 
 ## Setup
 
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AdityaBhosale22/mern_assignment.git
 cd assignment_mern
 ```
 
@@ -28,7 +41,7 @@ cd assignment_mern
 ```bash
 cd server
 cp .env.example .env
-# Edit .env: set MONGODB_URI and JWT_SECRET (use a long random string for production)
+# Edit .env: set MONGODB_URI to your Atlas connection string and set JWT_SECRET
 npm install
 ```
 
