@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { MongoMemoryServer } from "mongodb-memory-server";
+import User from "../models/User.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,30 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 let memoryServer;
+
+async function fixLegacyUserIndexes() {
+  const usersCollection = mongoose.connection.collection("users");
+
+  try {
+    const indexes = await usersCollection.indexes();
+    const legacyUsernameIndex = indexes.find(
+      (idx) => idx?.name === "username_1" || idx?.key?.username === 1
+    );
+
+    if (legacyUsernameIndex) {
+      await usersCollection.dropIndex(legacyUsernameIndex.name);
+      console.log(`Dropped legacy MongoDB index: ${legacyUsernameIndex.name}`);
+    }
+  } catch (err) {
+    // Ignore missing namespace errors when the collection has not been created yet.
+    if (err?.codeName !== "NamespaceNotFound" && err?.code !== 26) {
+      throw err;
+    }
+  }
+
+  // Ensure current schema indexes are aligned (for example, unique email index).
+  await User.syncIndexes();
+}
 
 function isLocalMongoUri(uri) {
   return (
@@ -55,6 +80,7 @@ export async function connectDB() {
 
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    await fixLegacyUserIndexes();
     console.log(
       configuredUri ? "MongoDB connected" : "MongoDB connected using in-memory fallback"
     );
@@ -66,6 +92,7 @@ export async function connectDB() {
       );
       const fallbackUri = await getMemoryServerUri();
       await mongoose.connect(fallbackUri, { serverSelectionTimeoutMS: 5000 });
+      await fixLegacyUserIndexes();
       process.env.MONGODB_URI = fallbackUri;
       console.log("MongoDB connected using in-memory fallback");
       return fallbackUri;
